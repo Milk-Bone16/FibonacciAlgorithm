@@ -17,7 +17,6 @@
 size_t calculateFibonacci(uint64_t n, mpz_t res, size_t predictedSizeBits) {
 	size_t currentFib = 2;
 
-
 	mpz_t a;
 	mpz_init2(a, predictedSizeBits);
 	mpz_set_ui(a, 1);
@@ -34,8 +33,6 @@ size_t calculateFibonacci(uint64_t n, mpz_t res, size_t predictedSizeBits) {
 		mpz_sub(c, c, a);
 		mpz_mul(c, c, a); // c now holds F(2k)
 
-		//mpz_pow_ui(a, a, 2);
-		//mpz_pow_ui(b, b, 2);
 		mpz_mul(a, a, a);
 		mpz_mul(b, b, b);
 		mpz_add(b, b, a); // b now holds F(2k + 1)
@@ -47,8 +44,6 @@ size_t calculateFibonacci(uint64_t n, mpz_t res, size_t predictedSizeBits) {
 
 	mpz_set(res, b);
 
-	//printf("a: %d\n", a[0]._mp_size);
-	//printf("b: %d\n", b[0]._mp_size);
 
 	mpz_clear(a);
 	mpz_clear(b);
