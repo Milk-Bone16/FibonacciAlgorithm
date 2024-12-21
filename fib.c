@@ -7,6 +7,22 @@
 #include <gmp.h>
 #include <math.h>
 
+
+#ifdef BENCHMARK
+#define PROFILE(func) do{\
+	clock_t start, end;\
+	start = clock();\
+	func;\
+	end = clock();\
+	printf("%s: ", # func);\
+	printf("Time taken: %fs\n", ((double) (end - start)) / CLOCKS_PER_SEC);\
+}while(0)
+#endif
+#ifndef BENCHMARK
+#define PROFILE(func) func
+#endif
+
+
 /*
 * Given F(k) and F(k+1)
 * F(2k) = F(k)[2F(k + 1) - F(k)]
@@ -18,26 +34,33 @@ size_t calculateFibonacci(uint64_t n, mpz_t res, size_t predictedSizeBits) {
 	size_t currentFib = 2;
 
 	mpz_t a;
-	mpz_init2(a, predictedSizeBits);
+	PROFILE(mpz_init2(a, predictedSizeBits));
 	mpz_set_ui(a, 1);
 
 	mpz_t b;	// b will store F(2k + 1) after F(2k) is calculated
-	mpz_init2(b, predictedSizeBits);
+	PROFILE(mpz_init2(b, predictedSizeBits));
 	mpz_set_ui(b, 2);
 
 	mpz_t c;	// c will store F(2k)
-	mpz_init2(c, predictedSizeBits);
+	PROFILE(mpz_init2(c, predictedSizeBits));
+
+	mpz_t d;	// another temp
+	PROFILE(mpz_init2(d, predictedSizeBits));
 	
 	while(currentFib < n){
-		mpz_mul_ui(c, b, 2);
-		mpz_sub(c, c, a);
-		mpz_mul(c, c, a); // c now holds F(2k)
+		PROFILE(mpz_mul_ui(c, b, 2));
+		PROFILE(mpz_sub(c, c, a));
+		PROFILE(mpz_mul(c, c, a)); // c now holds F(2k)
 
-		mpz_mul(a, a, a);
-		mpz_mul(b, b, b);
-		mpz_add(b, b, a); // b now holds F(2k + 1)
+		PROFILE(mpz_mul(d, a, a));
+		PROFILE(mpz_swap(a, d));
 
-		mpz_swap(a, c); // swap so that a equals F(2k)
+		PROFILE(mpz_mul(d, b, b));
+		PROFILE(mpz_swap(b, d));
+
+		PROFILE(mpz_add(b, b, a)); // b now holds F(2k + 1)
+
+		PROFILE(mpz_swap(a, c)); // swap so that a equals F(2k)
 
 		currentFib *= 2;
 	}
@@ -61,7 +84,11 @@ int main(int argc, char* argv[]){
 	// predictedSize is (2^(ceil(log_2(n))+1) * log(phi) - log(sqrt(5)))
 	// This prediction is reasonbly accurate but could be better with larger ocnstants
 	size_t predictedSizeBits = ((pow(2, ceil(log2((double)findNumber))) + 1) * 0.6942419136306173017387902669 - 1.16096404744368117393515971474);
-	printf("Predicted Size Bits: %lu\n", predictedSizeBits);
+	// now round to nearest multiple of 64
+	if(predictedSizeBits % 64 != 0){
+		predictedSizeBits += 64 - (predictedSizeBits % 64);
+	}
+
 	mpz_t finalNumber;
 	mpz_init2(finalNumber, predictedSizeBits);
 	size_t foundFib;
@@ -71,8 +98,11 @@ int main(int argc, char* argv[]){
 	foundFib = calculateFibonacci(findNumber, finalNumber, predictedSizeBits);
 	end = clock();
 
+	#ifdef BENCHMARK
+	printf("Predicted Size Bits: %lu\n", predictedSizeBits);
 	printf("Actual Size Bits:    %d\n", 64 * finalNumber[0]._mp_size);
 	printf("Actual Size Bits al: %d\n", 64 * finalNumber[0]._mp_alloc);
+	#endif
 
 	printf("F(%lu) = \n", foundFib);
 	if (*argv[1] != 's') {

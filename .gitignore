@@ -1,4 +1,5 @@
 
 ./fib
+./fib-profiled
 output.txt
 
